@@ -30,7 +30,7 @@ def measureSimilarity(m1, m2):
   else:
     similarity = (1.0 * same) / (same + different)
   # Score for notes used TODO FIX THIS ITS NOT WORKING FOR m1 == m2 AT LEAST
-  pitches1 = [x.nameWithOctave for x in m1.pitches] # dont use actual pitches coz refs
+  '''pitches1 = [x.nameWithOctave for x in m1.pitches] # dont use pitch objects since equality goes by reference
   pitches2 = [x.nameWithOctave for x in m2.pitches]
   pitches = pitches1
   for p in pitches2:
@@ -43,18 +43,14 @@ def measureSimilarity(m1, m2):
     points = 0.3
   else:
     points = 0.0
+  sum_of_weights = 2.0'''
+  points = 1.0
   sum_of_weights = 2.0
   return (similarity + points) / sum_of_weights
 
 # Returns a self-similarity matrix of the measures
 def similarityMatrix(measures):
   rows = []
-  '''for m1 in measures:
-    row = []
-    for m2 in measures:
-      similarity = measureSimilarity(m1, m2)
-      row.append(similarity)
-    rows.append(row)'''
   for i in range(len(measures)):
     rows.append([0] * len(measures))
   for i in range(len(measures)):
@@ -65,35 +61,8 @@ def similarityMatrix(measures):
   mat = np.matrix(rows)
   return mat
 
-
-# Analyze song structure and find bounds.
-# Mat = self similarity matrix. 
-def calculateBounds(mat):
-  min_seg_length = 4	# segment is at least 4 measures long
-  threshold = 0.98		# min similarity between "same" measures
-  n = mat.shape[0]
-  if (mat.shape[0] != mat.shape[1]):
-    print "Error: matrix shape is not square!"
-  
-  bounds = []     # measures where segments begin
-  bounds.append(0)
-  
-  for i in range(n - min_seg_length):
-    x = 0
-    for j in range(i + min_seg_length, n):
-      if (mat[i, j] > threshold):
-        x += 1
-      else:
-        break
-    if x > min_seg_length:
-      # create segment
-      bounds.append(i + x)
-  return bounds
-
-# Segment given file
-def main():
-  filename = 'input/' + raw_input('Enter song filename: ')
-  # filename = 'input/oasis_morning_glory.xml'
+# Parses a song by filename and creates a measure-precision self-similarity matrix
+def parseSongToSimilarityMatrix(filename):
   print 'Parsing song'
   song = music21.converter.parse(filename)
   final_mat = None
@@ -106,20 +75,68 @@ def main():
       final_mat = mat
     else:
       final_mat += mat
-  print 'Similarity matrix created'
   final_mat *= 1.0 / len(song.parts)
+  print 'Similarity matrix created'
+  return final_mat
+
+  #todo try string find on matrix
   
-  bounds = calculateBounds(final_mat)
+# Analyze song structure and find bounds that seperate segments.
+# mat = self-similarity matrix of the song. 
+def calculateBounds(mat):
+  min_seg_length = 2	# segment is at least this many measures long
+  threshold = 0.98		# min similarity between "same" measures
+  n = mat.shape[0]
+  if (mat.shape[0] != mat.shape[1]):
+    print "Error: matrix shape is not square!"
   
-  print bounds
   
+  
+  bounds = []     # measures where segments begin
+  print mat
+  i = 0
+  while i < n - min_seg_length:
+    x = 0                     # amount of sequential similar measures in compared parts
+    j = i + min_seg_length    # beginning of compared later part
+    while j < n:
+      while j + x < n:
+        similarity = mat[i + x, j + x]
+        if similarity > threshold:
+          x += 1
+        else:
+          break
+        x += 1
+      if x > min_seg_length:
+        # create new segments
+        bounds.append((i, i + x))
+        bounds.append((j, j + x))
+        j += x
+      else:
+        j += 1
+    i += 1
+  
+  return bounds
+
+def displaySimilarityMatrix(mat):
+  n = mat.shape[0]
   fig = plt.figure()
   ax = fig.add_subplot(1,1,1)
   ax.set_aspect('equal')
   ax.set_title('Song self-similarity')
-  plt.imshow(final_mat, interpolation='nearest', cmap=plt.cm.ocean, extent=(0.5, n+0.5, 0.5, n+0.5))
+  plt.imshow(mat, interpolation='nearest', cmap=plt.cm.ocean, extent=(0.5, n+0.5, 0.5, n+0.5))
   plt.colorbar()
   plt.show()
+  
+# Segment given file
+def main():
+  filename = 'input/' + raw_input('Enter song filename: ')
+  final_mat = parseSongToSimilarityMatrix(filename)
+  bounds = calculateBounds(final_mat)
+  
+  print "Bounds: "
+  print bounds
+  
+  displaySimilarityMatrix(final_mat)
 
 
 if __name__ == '__main__':
