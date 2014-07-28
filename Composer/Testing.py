@@ -49,14 +49,42 @@ def measureSimilarity(m1, m2):
 # Returns a self-similarity matrix of the measures
 def similarityMatrix(measures):
   rows = []
-  for m1 in measures:
+  '''for m1 in measures:
     row = []
     for m2 in measures:
       similarity = measureSimilarity(m1, m2)
       row.append(similarity)
-    rows.append(row)
+    rows.append(row)'''
+  for i in range(len(measures)):
+	rows.append([0] * len(measures))
+  for i in range(len(measures)):
+	for j in range(i, len(measures)):
+	  similarity = measureSimilarity(measures[i], measures[j])
+	  rows[i][j] = similarity
+	  rows[j][i] = similarity
   mat = np.matrix(rows)
   return mat
+
+
+# Analyze song structure and find bounds.
+# Mat = self similarity matrix. 
+def calculateBounds(mat):
+  min_seg_length = 4	# segment is at least 4 measures long
+  threshold = 0.98		# min similarity between "same" measures
+  n = mat.shape[0]
+  
+  if (mat.shape[0] != mat.shape[1]):
+	print "Error: matrix shape is not square!"
+  
+  for i in range(n - min_seg_length):
+	x = 0
+	for j in range(i + min_seg_length, n):
+	  print i, j, n
+	  if (mat[i][j] > threshold): #outofbounds
+		x += 1
+	  else:
+		break
+	
 
 # Segment given file
 def main():
@@ -65,6 +93,7 @@ def main():
   print 'Parsing song'
   song = music21.converter.parse(filename)
   final_mat = None
+  print 'Song parsed'
   for p in song.parts:
     measures = p.getElementsByClass(stream.Measure)
     n = len(measures)
@@ -73,8 +102,11 @@ def main():
       final_mat = mat
     else:
       final_mat += mat
+  print 'Similarity matrix created'
   final_mat *= 1.0 / len(song.parts)
-    
+  
+  bounds = calculateBounds(final_mat)
+  
   fig = plt.figure()
   ax = fig.add_subplot(1,1,1)
   ax.set_aspect('equal')
