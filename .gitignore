@@ -2,3 +2,5 @@
 *.midi
 *.xml
 *.gp*
+!test1.xml
+!test2.xml

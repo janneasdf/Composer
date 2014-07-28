@@ -56,12 +56,12 @@ def similarityMatrix(measures):
       row.append(similarity)
     rows.append(row)'''
   for i in range(len(measures)):
-	rows.append([0] * len(measures))
+    rows.append([0] * len(measures))
   for i in range(len(measures)):
-	for j in range(i, len(measures)):
-	  similarity = measureSimilarity(measures[i], measures[j])
-	  rows[i][j] = similarity
-	  rows[j][i] = similarity
+    for j in range(i, len(measures)):
+      similarity = measureSimilarity(measures[i], measures[j])
+      rows[i][j] = similarity
+      rows[j][i] = similarity
   mat = np.matrix(rows)
   return mat
 
@@ -72,19 +72,23 @@ def calculateBounds(mat):
   min_seg_length = 4	# segment is at least 4 measures long
   threshold = 0.98		# min similarity between "same" measures
   n = mat.shape[0]
-  
   if (mat.shape[0] != mat.shape[1]):
-	print "Error: matrix shape is not square!"
+    print "Error: matrix shape is not square!"
+  
+  bounds = []     # measures where segments begin
+  bounds.append(0)
   
   for i in range(n - min_seg_length):
-	x = 0
-	for j in range(i + min_seg_length, n):
-	  print i, j, n
-	  if (mat[i][j] > threshold): #outofbounds
-		x += 1
-	  else:
-		break
-	
+    x = 0
+    for j in range(i + min_seg_length, n):
+      if (mat[i, j] > threshold):
+        x += 1
+      else:
+        break
+    if x > min_seg_length:
+      # create segment
+      bounds.append(i + x)
+  return bounds
 
 # Segment given file
 def main():
@@ -106,6 +110,8 @@ def main():
   final_mat *= 1.0 / len(song.parts)
   
   bounds = calculateBounds(final_mat)
+  
+  print bounds
   
   fig = plt.figure()
   ax = fig.add_subplot(1,1,1)
