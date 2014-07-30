@@ -44,8 +44,8 @@ def measureSimilarity(m1, m2):
   else:
     points = 0.0
   sum_of_weights = 2.0'''
-  points = 1.0
-  sum_of_weights = 2.0
+  points = 0.0
+  sum_of_weights = 1.0
   return (similarity + points) / sum_of_weights
 
 # Returns a self-similarity matrix of the measures
@@ -95,25 +95,7 @@ def calculateBounds(mat):
   bounds = []     # measures where segments begin
   print mat
   i = 0
-  while i < n - min_seg_length:
-    x = 0                     # amount of sequential similar measures in compared parts
-    j = i + min_seg_length    # beginning of compared later part
-    while j < n:
-      while j + x < n:
-        similarity = mat[i + x, j + x]
-        if similarity > threshold:
-          x += 1
-        else:
-          break
-        x += 1
-      if x > min_seg_length:
-        # create new segments
-        bounds.append((i, i + x))
-        bounds.append((j, j + x))
-        j += x
-      else:
-        j += 1
-    i += 1
+  # IDEA: kopioi osia kunnes sama toistuu tai 2x pidempi pätkä, kombota näitä ideoita
   
   return bounds
 
