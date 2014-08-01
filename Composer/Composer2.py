@@ -57,23 +57,28 @@ class Composer:
 		print "Generating song"
 		song = music21.stream.Score()
 		
-		# Add instrument tracks
+		# Initialize instrument tracks
+		tracks = []
 		for instrument_name in self.tracks.keys():
 			avg_amount = len(self.tracks[instrument_name]) / (1.0 * self.input_song_count)
-			print "Average amount of", instrument_name + " per song:", avg_amount
+			#print "Average amount of", instrument_name + " per song:", avg_amount
 			for i in range(int(round(avg_amount))):
 				print "Adding", instrument_name, "track"
 				track = music21.stream.Stream()
-				song.insert(track)
+				instrument = music21.instrument.Instrument()
+				instrument.instrumentName = instrument_name
+				track.insert(instrument)
+				tracks.append(track)
+		
 		# Populate the tracks
-		for track in song.parts:
-			for j in range(8):
-				print "adding note"
-				note = music21.note.Note()
-				note.pitch.name = 'E4'
-				note.duration.type = 'quarter'
-				track.append(note)
-			
+		for track in tracks:
+			for idea in self.ideas[track.getElementsByClass(music21.instrument.Instrument)[0].instrumentName]:
+				for note in idea:
+					track.append(note)
+		
+		# Insert tracks into song
+		for track in tracks:
+			song.insert(track)
 		
 		print "Song generated"
 		return song
