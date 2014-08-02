@@ -34,6 +34,7 @@ class Composer:
 		print "Song added"
 		self.input_song_count += 1
 		
+	# Call this once, after adding all songs. Analyzes all input songs for song generating purposes.
 	def analyzeInput(self):
 		print "-" * 10
 		# Create stats etc from data
@@ -72,7 +73,11 @@ class Composer:
 		
 		# Populate the tracks
 		for track in tracks:
-			for idea in self.ideas[track.getElementsByClass(music21.instrument.Instrument)[0].instrumentName]:
+			track_ideas = self.ideas[track.getElementsByClass(music21.instrument.Instrument)[0].instrumentName]:
+			idea = random.choice(track_ideas)
+			while idea.duration.quarterLength != 4:		# only choose 4/4 measures
+				idea = random.choice(track_ideas)
+			for i in range(4):							# add some repetition
 				for note in idea:
 					track.append(note)
 		
