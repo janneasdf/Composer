@@ -1,2 +1,0 @@
-Ker‰‰ sointuvarasto ja todenn‰kˆisyysmappi (sointu->sointu tai taakse p‰in rekursiivinen)
-Ker‰‰ fraaseja sointujen p‰‰lle (suhteellisesti), painota ‰‰nien tilastollisen (datassa) yleisyyden pohjalta
