@@ -11,8 +11,8 @@ from pprint import pprint
 max_song_length = 8
 
 def main():
-	input_folder = "input"
-	output_folder = "output"
+	input_folder = "../input"
+	output_folder = "../output"
 	
 	t1 = time.clock()
 	last_time = t1;

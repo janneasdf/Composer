@@ -111,7 +111,7 @@ def displaySimilarityMatrix(mat):
   
 # Segment given file
 def main():
-  filename = 'input/' + raw_input('Enter song filename: ')
+  filename = '../input/' + raw_input('Enter song filename: ')
   final_mat = parseSongToSimilarityMatrix(filename)
   bounds = calculateBounds(final_mat)
   

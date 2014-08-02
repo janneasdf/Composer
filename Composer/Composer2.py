@@ -47,14 +47,12 @@ class Composer:
       self.ideas[instrument_name] = []
       for track in self.tracks[instrument_name]:
         measures = track.getElementsByClass(music21.stream.Measure)
-        for i in range(0, 4):   # grab four random four-measure sequences
+        for i in range(0, 8):   # grab eight random four-measure sequences
           idea = music21.stream.Measure()
           rand_i = random.randint(0, len(measures) - 4)
           for j in range(0, 4):   # four measures
             idea.append(music21.stream.Measure(measures[rand_i + j].getElementsByClass(music21.note.Note)))
-          #idea = music21.stream.Measure([note for note in random.choice(measures).getElementsByClass(music21.note.Note)])
           self.ideas[instrument_name].append(idea)
-        #idea.show('text')   
     
     print "Extraction done"
   
