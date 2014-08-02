@@ -41,14 +41,18 @@ class Composer:
     print "Instruments and track counts: "
     for instrument_name in self.tracks.keys():
       print instrument_name, len(self.tracks[instrument_name])
+      
     print "Extracting ideas..."
-    
     for instrument_name in self.tracks.keys():
       self.ideas[instrument_name] = []
       for track in self.tracks[instrument_name]:
         measures = track.getElementsByClass(music21.stream.Measure)
-        for i in range(0, len(measures)):
-          idea = music21.stream.Measure([note for note in random.choice(measures).getElementsByClass(music21.note.Note)])
+        for i in range(0, 4):   # grab four random four-measure sequences
+          idea = music21.stream.Measure()
+          rand_i = random.randint(0, len(measures) - 4)
+          for j in range(0, 4):   # four measures
+            idea.append(music21.stream.Measure(measures[rand_i + j].getElementsByClass(music21.note.Note)))
+          #idea = music21.stream.Measure([note for note in random.choice(measures).getElementsByClass(music21.note.Note)])
           self.ideas[instrument_name].append(idea)
         #idea.show('text')   
     
@@ -78,14 +82,15 @@ class Composer:
       for j in range(8):
         idea = random.choice(track_ideas)
         tries = 0
-        while idea.duration.quarterLength != 4 and tries < 20:    # only choose 4/4 measures
+        while idea.duration.quarterLength != 4 * 4 and tries < 20:    # only choose 4/4 measures
           idea = random.choice(track_ideas)
           tries += 1
         for i in range(4):              # add some repetition
-          for note in idea:
-            note_copy = music21.note.Note(note.name)
-            note_copy.duration = note.duration
-            track.append(note_copy)
+          for measure in idea:
+            for note in measure:
+              note_copy = music21.note.Note(note.name)
+              note_copy.duration = note.duration
+              track.append(note_copy)
     
     # Insert tracks into song
     for track in tracks:
@@ -99,12 +104,16 @@ def main():
   composer = Composer()
   input_folder = 'input'
   output_folder = 'output'
+  output_name = 'composer'
   for filename in [f for f in listdir(input_folder) if isfile(join(input_folder, f))]:
     composer.addSong(join(input_folder, filename))
   composer.analyzeInput()
   song = composer.generateSong()
-  print "Writing MusicXML file"
-  song.write('xml', join(output_folder, "composer.xml"))
+  print "Writing MusicXML file (" + output_name + ".xml)"
+  song.write('xml', join(output_folder, output_name + ".xml"))
+  print "Writing MIDI file (" + output_name + ".mid)"
+  song.write('mid', join(output_folder, output_name + ".mid"))
+  key = song.analyze('key')
     
 if __name__ == '__main__':
   main()
