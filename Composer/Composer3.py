@@ -30,6 +30,7 @@ class Composer:
   input_song_count = 0      # amount of songs parsed
   tracks = {}           # string -> list of tracks for instrument
   ideas = {}            # string -> list of ideas for instrument
+  song_name_words = []
   
   def __init__(self):
     pass
@@ -38,6 +39,12 @@ class Composer:
     print "-" * 10
     print "Adding song", filename
     song = music21.converter.parse(filename)
+    
+    song_name = song.metadata.title;
+    song_name = song_name.replace("_", " ")
+    if (song_name.replace(" ", "") != ""):
+      for word in song_name.split(" "):
+        self.song_name_words.append(word)
     
     # Analyze instrument tracks
     for track in song.parts:
@@ -61,28 +68,37 @@ class Composer:
     
     print "Extraction done"
   
+  # Generates a new song using the ideas gathered from input songs
   def generateSong(self):
     print "-" * 10
     print "Generating song"
     song = music21.stream.Score()
-    
+    song.metadata = music21.metadata.Metadata(title = self.generateName())
     return song
+  
+  # Generates a new song name with words from input song titles
+  def generateName(self):
+    words = []
+    for i in range(random.randint(1, 6)):
+      words.append(random.choice(self.song_name_words))
+    name = " ".join(words)
+    print self.song_name_words
+    return name
 
 
 def main():
   composer = Composer()
   input_folder = 'input'
   output_folder = 'output'
-  output_name = 'composer'
   for filename in [f for f in listdir(input_folder) if isfile(join(input_folder, f))]:
     composer.addSong(join(input_folder, filename))
   composer.analyzeInput()
   song = composer.generateSong()
+  output_name = song.metadata.title
   print "Writing MusicXML file (" + output_name + ".xml)"
   song.write('xml', join(output_folder, output_name + ".xml"))
   print "Writing MIDI file (" + output_name + ".mid)"
   song.write('mid', join(output_folder, output_name + ".mid"))
-  key = song.analyze('key')
     
 if __name__ == '__main__':
   main()
