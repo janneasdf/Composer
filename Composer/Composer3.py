@@ -14,9 +14,27 @@ class IdeaBank:
   def __init__(self):
     pass
   
-  def addTrack(self, measure):
-    # Extract ideas
-    pass
+  def addTrack(self, instrument_name, track):
+    # Extract ideas (idea = key, measures pair)
+    new_ideas = []
+    idea = music21.stream.Stream()
+    for i in range(4):
+      note = music21.note.Note()
+      note.pitch.name = 'E4'
+      note.duration.type = 'quarter'
+      idea.append(note)
+    new_ideas.append((music21.key.Key('E'), idea))
+    idea.show()
+    # Add ideas to the bank
+    if instrument_name not in self.ideas.keys():
+      self.ideas[instrument_name] = {}
+    for idea in new_ideas:
+      length_in_eights = int(idea[1].duration.quarterLength * 2)  # todo check divisibility by eights
+      print length_in_eights
+      if length_in_eights not in self.ideas[instrument_name]:
+        self.ideas[instrument_name][length_in_eights] = []
+      self.ideas[instrument_name][length_in_eights].append(idea)
+    
   
   # Returns certain length ideas for instrument, and transposes them to the target key
   def getIdea(instrument_name, length_in_eighths, target_key):
@@ -31,9 +49,10 @@ class Composer:
   tracks = {}           # string -> list of tracks for instrument
   ideas = {}            # string -> list of ideas for instrument
   song_name_words = []
+  idea_bank = None
   
   def __init__(self):
-    pass
+    self.idea_bank = IdeaBank()
 
   def addSong(self, filename):
     print "-" * 10
@@ -56,6 +75,7 @@ class Composer:
         if instrument.instrumentName not in self.tracks.keys():
           self.tracks[instrument.instrumentName] = []
         self.tracks[instrument.instrumentName].append(track)
+        self.idea_bank.addTrack(instrument.instrumentName, track)
     
     print "Song added"
     self.input_song_count += 1
