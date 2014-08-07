@@ -14,10 +14,12 @@ class IdeaBank:
   def __init__(self):
     pass
   
-  def analyzeMeasuresKey(self, track, first_measure_index, last_measure_index):
+  def analyzeMeasuresKey(self, tracks, first_measure_index, last_measure_index):
     target = music21.stream.Stream()    # contains the measures to analyze for key
-    for m in track.measures(first_measure_index, last_measure_index):
-      target.append(m)
+    # All measures are appended (since apparently order etc doesn't matter in K-S key analyzing algorithm)
+    for track in tracks:
+      for m in track.measures(first_measure_index, last_measure_index):
+        target.append(m)
     
     key = None
     try:
@@ -27,8 +29,18 @@ class IdeaBank:
     print "key: ", key
     return key
   
-  def addTrack(self, instrument_name, track):
+  # Extracts ideas from tracks of a single song.
+  # tracks_with_names = dictionary, string (instrument name) -> part (instrument track)
+  def extractIdeasFromTracks(self, tracks_with_names):
     # Extract ideas (idea = key, measures pair)
+    parts_to_extract = [(0, 32)]    # Later probably determined by song structure
+    keys_for_parts = []
+    tracks = tracks_with_names.values()
+    for start_end_pair in parts_to_extract:
+      part_key = self.analyzeMeasuresKey(tracks, start_end_pair[0], start_end_pair[1])
+      if part_key != None:
+        
+    
     new_ideas = []
     idea = music21.stream.Stream()
     for i in range(4):
@@ -39,6 +51,7 @@ class IdeaBank:
     idea_key = self.analyzeMeasuresKey(track, 0, 32) # test code
     new_ideas.append((music21.key.Key('E'), idea))
     #idea.show()
+    
     # Add ideas to the bank
     if instrument_name not in self.ideas.keys():
       self.ideas[instrument_name] = {}
@@ -80,6 +93,7 @@ class Composer:
         self.song_name_words.append(word)
     
     # Analyze instrument tracks
+    temp_tracks = {}    # used for analyzing this specific song's tracks
     for track in song.parts:
       instruments = track.getElementsByClass(music21.instrument.Instrument)
       if len(instruments) != 1:
@@ -89,7 +103,12 @@ class Composer:
         if instrument.instrumentName not in self.tracks.keys():
           self.tracks[instrument.instrumentName] = []
         self.tracks[instrument.instrumentName].append(track)
-        self.idea_bank.addTrack(instrument.instrumentName, track)
+        if instrument.instrumentName not in temp_tracks.keys():
+          temp_tracks[instrument.instrumentName] = []
+        temp_tracks[instrument.instrumentName].append(track)
+        #self.idea_bank.addTrack(instrument.instrumentName, track)
+    
+    self.idea_bank.extractIdeasFromTracks(temp_tracks)
     
     print "Song added"
     self.input_song_count += 1
