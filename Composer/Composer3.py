@@ -14,6 +14,19 @@ class IdeaBank:
   def __init__(self):
     pass
   
+  def analyzeMeasuresKey(self, track, first_measure_index, last_measure_index):
+    target = music21.stream.Stream()    # contains the measures to analyze for key
+    for m in track.measures(first_measure_index, last_measure_index):
+      target.append(m)
+    
+    key = None
+    try:
+      key = m.analyze('key')
+    except:
+      print "Couldn't identify key for measures", first_measure_index, "to", last_measure_index
+    print "key: ", key
+    return key
+  
   def addTrack(self, instrument_name, track):
     # Extract ideas (idea = key, measures pair)
     new_ideas = []
@@ -23,8 +36,9 @@ class IdeaBank:
       note.pitch.name = 'E4'
       note.duration.type = 'quarter'
       idea.append(note)
+    idea_key = self.analyzeMeasuresKey(track, 0, 32) # test code
     new_ideas.append((music21.key.Key('E'), idea))
-    idea.show()
+    #idea.show()
     # Add ideas to the bank
     if instrument_name not in self.ideas.keys():
       self.ideas[instrument_name] = {}
