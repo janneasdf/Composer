@@ -26,16 +26,21 @@ class IdeaBank:
     try:
       #key = m.analyze('key')
       key = m.analyze('AardenEssen')
+      print "Key for measures", first_measure_index, "to", last_measure_index, ":", key, key.tonic, key.mode
     except:
       print "Couldn't identify key for measures", first_measure_index, "to", last_measure_index
-    print "key: ", key, key.tonic, key.mode
     return key
   
   # Extracts ideas from tracks of a single song.
   # tracks_with_names = dictionary, string (instrument name) -> LIST of parts (instrument track)
   def extractIdeasFromTracks(self, tracks_with_names):
     # Analyze locations to choose ideas from
-    parts_to_extract = [(0, 92)]    # Later probably determined by song structure
+    track_length_in_measures = len(tracks_with_names.values()[0][0].getElementsByClass('Measure'))
+    parts_to_extract = []   # Later probably determined by song structure
+    #for i in range(track_length_in_measures / 8):
+    #  parts_to_extract.append((i * 8, (i + 1) * 8))
+    for i in range((track_length_in_measures / 16) - 1):
+      parts_to_extract.append((i * 16, (i + 1) * 16))
     
     # Extract keys for of the ideas
     keys_for_parts = []
@@ -53,6 +58,7 @@ class IdeaBank:
         return
     
     # Extract the actual ideas
+    print "Extracting ideas"
     new_ideas = {}
     for instrument_name in tracks_with_names.keys():
         new_ideas[instrument_name] = []
@@ -77,13 +83,12 @@ class IdeaBank:
     # idea.show()
     
     # Add ideas to the bank     TODO modify to support the diff. instruments change
+    print "Storing ideas"
     for instrument_name in tracks_with_names.keys():
         if instrument_name not in self.ideas.keys():
             self.ideas[instrument_name] = {}
         for idea in new_ideas[instrument_name]:
-            # idea = (key, measures)
             length_in_eighths = int(idea[1].duration.quarterLength * 2)
-            print length_in_eighths
             if length_in_eighths not in self.ideas[instrument_name].keys():
                 self.ideas[instrument_name][length_in_eighths] = []
             self.ideas[instrument_name][length_in_eighths].append(idea)
@@ -109,13 +114,18 @@ class Composer:
   def addSong(self, filename):
     print "-" * 10
     print "Adding song", filename
-    song = music21.converter.parse(filename)
+    try:
+        song = music21.converter.parse(filename)
+    except:
+        print "Something went wrong when parsing " + filename + "; skipping song"
+        return
     
     song_name = song.metadata.title;
     song_name = song_name.replace("_", " ")
     if (song_name.replace(" ", "") != ""):
       for word in song_name.split(" "):
-        self.song_name_words.append(word)
+        if word.replace(" ", "") != "":
+          self.song_name_words.append(word)
     
     # Analyze instrument tracks
     temp_tracks = {}    # used for analyzing this specific song's tracks
@@ -131,7 +141,6 @@ class Composer:
         if instrument.instrumentName not in temp_tracks.keys():
           temp_tracks[instrument.instrumentName] = []
         temp_tracks[instrument.instrumentName].append(track)
-        #self.idea_bank.addTrack(instrument.instrumentName, track)
     
     self.idea_bank.extractIdeasFromTracks(temp_tracks)
     
@@ -142,9 +151,10 @@ class Composer:
   def analyzeInput(self):
     print "-" * 10
       
-    print "Extracting ideas..."
-    
-    print "Extraction done"
+    print "Analyzing input..."
+    # note: no use for this currently since ideas are extracted when adding songs,
+    # this function will eventually probably create statistics or something
+    print "Analyzing done"
   
   # Generates a new song using the ideas gathered from input songs
   def generateSong(self):
