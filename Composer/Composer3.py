@@ -97,11 +97,14 @@ class IdeaBank:
   
   # Returns certain length ideas for instrument, and transposes them to the target key
   def getIdea(self, instrument_name, length_in_eighths, target_key):
+    if length_in_eighths not in self.ideas[instrument_name].keys():
+      raise Exception('No ideas for length ' + str(length_in_eighths) + ' found')
     fitting_ideas = self.ideas[instrument_name][length_in_eighths]
     if len(fitting_ideas) == 0:
       raise Exception('No fitting idea found')
     idea = random.choice(fitting_ideas)
-    return idea
+    # todo: Transpose idea to target key
+    return idea[1]    # only return notes, since transposed already
   
 class Composer:
   input_song_count = 0      # amount of songs parsed
@@ -109,6 +112,8 @@ class Composer:
   ideas = {}            # string -> list of ideas for instrument
   song_name_words = []
   idea_bank = None
+  #instrument_names_to_numbers = {}    # string -> midi program number
+  names_to_instruments = {}
   
   def __init__(self):
     self.idea_bank = IdeaBank()
@@ -134,7 +139,7 @@ class Composer:
     for track in song.parts:
       instruments = track.getElementsByClass(music21.instrument.Instrument)
       if len(instruments) != 1:
-        print "ERROR: more than one instrument in track"
+        print "ERROR: less or more than one instrument in track"
       instrument = instruments[0]
       if instrument.instrumentName != "Piano":    # Drums turn into piano for some reason
         if instrument.instrumentName not in self.tracks.keys():
@@ -143,6 +148,8 @@ class Composer:
         if instrument.instrumentName not in temp_tracks.keys():
           temp_tracks[instrument.instrumentName] = []
         temp_tracks[instrument.instrumentName].append(track)
+        self.names_to_instruments[instrument.instrumentName] = instrument
+        #self.instrument_names_to_numbers[instrument.instrumentName] = instrument.midiProgram
     
     self.idea_bank.extractIdeasFromTracks(temp_tracks)
     
@@ -172,8 +179,11 @@ class Composer:
       for i in range(int(round(avg_amount))):
         print "Adding", instrument_name, "track"
         track = music21.stream.Stream()
-        instrument = music21.instrument.Instrument()
-        instrument.instrumentName = instrument_name
+        #number = self.instrument_names_to_numbers[instrument_name]
+        #print "number:", number
+        #instrument = music21.instrument.instrumentFromMidiProgram(number)
+        #instrument.instrumentName = instrument_name
+        instrument = self.names_to_instruments[instrument_name]
         track.insert(instrument)
         tracks.append(track)
     
@@ -183,10 +193,17 @@ class Composer:
       key = music21.key.Key('C')
       for i in range(4):
         idea = self.idea_bank.getIdea(instrument_name, 16 * 8, key)
-        notes = idea[1].notesAndRests
-        for note in notes:
-          note_copy = music21.note.Note(note.name)
-          note_copy.duration = note.duration
+        notes = idea.flat.notesAndRests
+        #idea.show('text')
+        for thing in notes: # thing can be note, rest, or chord
+          note_copy = None
+          if thing.isRest:
+            note_copy = music21.note.Rest()
+          elif thing.isChord:
+            note_copy = music21.chord.Chord(thing.pitches)
+          else:
+            note_copy = music21.note.Note(thing.name)
+          note_copy.duration = thing.duration
           track.append(note_copy)
     
     # Insert tracks to song
