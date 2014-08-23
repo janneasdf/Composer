@@ -20,48 +20,73 @@ class IdeaBank:
     for track in tracks:
       for m in track.measures(first_measure_index, last_measure_index):
         target.append(m)
-    
+    target = target.notesAndRests
+    target.show('text')
     key = None
     try:
-      key = m.analyze('key')
+      #key = m.analyze('key')
+      key = m.analyze('AardenEssen')
     except:
       print "Couldn't identify key for measures", first_measure_index, "to", last_measure_index
-    print "key: ", key
+    print "key: ", key, key.tonic, key.mode
     return key
   
   # Extracts ideas from tracks of a single song.
-  # tracks_with_names = dictionary, string (instrument name) -> part (instrument track)
+  # tracks_with_names = dictionary, string (instrument name) -> LIST of parts (instrument track)
   def extractIdeasFromTracks(self, tracks_with_names):
-    # Extract ideas (idea = key, measures pair)
-    parts_to_extract = [(0, 32)]    # Later probably determined by song structure
+    # Analyze locations to choose ideas from
+    parts_to_extract = [(0, 92)]    # Later probably determined by song structure
+    
+    # Extract keys for of the ideas
     keys_for_parts = []
-    tracks = tracks_with_names.values()
+    tracks = []
+    for track_list in tracks_with_names.values():
+      for track in track_list:
+        tracks.append(track)
+    
     for start_end_pair in parts_to_extract:
       part_key = self.analyzeMeasuresKey(tracks, start_end_pair[0], start_end_pair[1])
-      if part_key != None:
-        
+      keys_for_parts.append(part_key)           # This can be None
     
-    new_ideas = []
-    idea = music21.stream.Stream()
+    if len(parts_to_extract) != len(keys_for_parts):
+        print "Error occured while extracting ideas, returning"
+        return
+    
+    # Extract the actual ideas
+    new_ideas = {}
+    for instrument_name in tracks_with_names.keys():
+        new_ideas[instrument_name] = []
+    for i in range(len(parts_to_extract)):
+        for instrument_name in tracks_with_names.keys():
+            for start_end_pair in parts_to_extract:
+                if keys_for_parts[i] != None:
+                    for track in tracks_with_names[instrument_name]:
+                      idea = music21.stream.Stream()
+                      for m in track.measures(start_end_pair[0], start_end_pair[1]):
+                          idea.append(m)
+                      new_ideas[instrument_name].append((keys_for_parts[i], idea))
+    
+    '''idea = music21.stream.Stream()
     for i in range(4):
       note = music21.note.Note()
       note.pitch.name = 'E4'
       note.duration.type = 'quarter'
       idea.append(note)
     idea_key = self.analyzeMeasuresKey(track, 0, 32) # test code
-    new_ideas.append((music21.key.Key('E'), idea))
-    #idea.show()
+    new_ideas.append((music21.key.Key('E'), idea))'''
+    # idea.show()
     
-    # Add ideas to the bank
-    if instrument_name not in self.ideas.keys():
-      self.ideas[instrument_name] = {}
-    for idea in new_ideas:
-      length_in_eights = int(idea[1].duration.quarterLength * 2)  # todo check divisibility by eights
-      print length_in_eights
-      if length_in_eights not in self.ideas[instrument_name]:
-        self.ideas[instrument_name][length_in_eights] = []
-      self.ideas[instrument_name][length_in_eights].append(idea)
-    
+    # Add ideas to the bank     TODO modify to support the diff. instruments change
+    for instrument_name in tracks_with_names.keys():
+        if instrument_name not in self.ideas.keys():
+            self.ideas[instrument_name] = {}
+        for idea in new_ideas[instrument_name]:
+            # idea = (key, measures)
+            length_in_eighths = int(idea[1].duration.quarterLength * 2)
+            print length_in_eighths
+            if length_in_eighths not in self.ideas[instrument_name].keys():
+                self.ideas[instrument_name][length_in_eighths] = []
+            self.ideas[instrument_name][length_in_eighths].append(idea)
   
   # Returns certain length ideas for instrument, and transposes them to the target key
   def getIdea(instrument_name, length_in_eighths, target_key):
