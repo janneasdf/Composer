@@ -40,6 +40,8 @@ class IdeaBank:
     #for i in range(track_length_in_measures / 8):
     #  parts_to_extract.append((i * 8, (i + 1) * 8))
     for i in range((track_length_in_measures / 16) - 1):
+      if i > 3:
+        break
       parts_to_extract.append((i * 16, (i + 1) * 16))
     
     # Extract keys for of the ideas
@@ -94,8 +96,8 @@ class IdeaBank:
             self.ideas[instrument_name][length_in_eighths].append(idea)
   
   # Returns certain length ideas for instrument, and transposes them to the target key
-  def getIdea(instrument_name, length_in_eighths, target_key):
-    fitting_ideas = self.ideas[instrument_name][length_in_eights]
+  def getIdea(self, instrument_name, length_in_eighths, target_key):
+    fitting_ideas = self.ideas[instrument_name][length_in_eighths]
     if len(fitting_ideas) == 0:
       raise Exception('No fitting idea found')
     idea = random.choice(fitting_ideas)
@@ -162,6 +164,35 @@ class Composer:
     print "Generating song"
     song = music21.stream.Score()
     song.metadata = music21.metadata.Metadata(title = self.generateName())
+    
+    # Initialize instrument tracks
+    tracks = []
+    for instrument_name in self.tracks.keys():
+      avg_amount = len(self.tracks[instrument_name]) / (1.0 * self.input_song_count)
+      for i in range(int(round(avg_amount))):
+        print "Adding", instrument_name, "track"
+        track = music21.stream.Stream()
+        instrument = music21.instrument.Instrument()
+        instrument.instrumentName = instrument_name
+        track.insert(instrument)
+        tracks.append(track)
+    
+    # Populate the tracks
+    for track in tracks:
+      instrument_name = track.getElementsByClass('Instrument')[0].instrumentName
+      key = music21.key.Key('C')
+      for i in range(4):
+        idea = self.idea_bank.getIdea(instrument_name, 16 * 8, key)
+        notes = idea[1].notesAndRests
+        for note in notes:
+          note_copy = music21.note.Note(note.name)
+          note_copy.duration = note.duration
+          track.append(note_copy)
+    
+    # Insert tracks to song
+    for track in tracks:
+      song.insert(track)
+    
     return song
   
   # Generates a new song name with words from input song titles
@@ -170,7 +201,6 @@ class Composer:
     for i in range(random.randint(1, 6)):
       words.append(random.choice(self.song_name_words))
     name = " ".join(words)
-    print self.song_name_words
     return name
 
 
@@ -183,6 +213,8 @@ def main():
   composer.analyzeInput()
   song = composer.generateSong()
   output_name = song.metadata.title
+  if output_name == "":
+    output_name = "composer"
   print "Writing MusicXML file (" + output_name + ".xml)"
   song.write('xml', join(output_folder, output_name + ".xml"))
   print "Writing MIDI file (" + output_name + ".mid)"
